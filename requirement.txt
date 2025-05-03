@@ -1,0 +1,11 @@
+torch
+torchvision
+ultralytics
+opencv-python
+opencv-python-headless
+matplotlib
+pandas
+easyocr
+pytorch_lightning
+timm
+nltk
