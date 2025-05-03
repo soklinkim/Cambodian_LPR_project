@@ -8,7 +8,7 @@ from torchvision import transforms
 from ultralytics import YOLO
 
 # Configuration
-INPUT_IMAGE_PATH = "data/car1.jgp"
+INPUT_IMAGE_PATH = "data/car1.jpg"
 MODEL1_PATH = "models/Cambodian_plate_detection.pt"
 MODEL2_PATH = "models/best.pt"
 CROP_DIR = "output/plate_crops"
