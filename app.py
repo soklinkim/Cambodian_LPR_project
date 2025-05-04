@@ -1,48 +1,43 @@
-import os
-import numpy as np
-from PIL import Image
 import streamlit as st
-from improved_main import detect_license_plates, enhance_plates, crop_characters, read_text_from_crops
-# Configuration
-MODEL1_PATH = "models/Cambodian_plate_detection.pt"
-MODEL2_PATH = "models/best.pt"
-CROP_DIR = "output/plate_crops"
-ENHANCED_DIR = "output/plate_crops_enhanced"
+import os
+from PIL import Image  # ✅ REQUIRED for displaying uploaded image
 
-# Make output directories
-os.makedirs(CROP_DIR, exist_ok=True)
-os.makedirs(ENHANCED_DIR, exist_ok=True)
+# Make sure 'temp' folder exists
+os.makedirs("temp", exist_ok=True)
 
-# Streamlit app code
-st.title('Cambodian License Plate Recognition')
-st.write("Upload an image of a vehicle for license plate detection, enhancement, and text recognition.")
+# Your custom functions
+from main import process_uploaded_image, crop_characters, read_text_from_crops
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+st.title("🚗 Cambodian License Plate Recognition")
+
+# Upload image
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    # Read and display the uploaded image
-    image = Image.open(uploaded_file)
-    image = np.array(image)
-    
-    st.image(image, caption='Uploaded Image', use_column_width=True)
+    # Save uploaded file temporarily
+    img_path = os.path.join("temp", uploaded_file.name)
+    with open(img_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-    if st.button('Detect License Plates'):
-        st.write("Detecting license plates...")
-        image, results, cropped_images = detect_license_plates(image, MODEL1_PATH)
-        
-        # Show cropped images
-        for idx, cropped_img in enumerate(cropped_images):
-            st.image(cropped_img, caption=f'Cropped Plate {idx + 1}')
-        
-        # Enhance the plates
-        st.write("Enhancing plates...")
-        enhanced_paths = enhance_plates(image, results)
-        for path in enhanced_paths:
-            st.image(path, caption=f'Enhanced Plate {os.path.basename(path)}')
+    # ✅ Show the uploaded image
+    st.image(Image.open(img_path), caption="Uploaded Image", use_column_width=True)
 
-        # Crop characters and read text
-        st.write("Reading text from enhanced crops...")
+    # 🔘 Add Detect button
+    if st.button("Detect"):
+        # Run detection
+        enhanced_paths = process_uploaded_image(img_path)
+
+        # Display results
+        st.subheader("📌 Detected License Plate Texts:")
         for path in enhanced_paths:
-            char_crops = crop_characters(path, MODEL2_PATH)
-            predictions = read_text_from_crops(char_crops)
-            st.write(f"Predictions for {path}: {predictions}")
+            try:
+                char_crops = crop_characters(path)
+                predictions = read_text_from_crops(char_crops)
+
+                if len(predictions) >= 2:
+                    st.write(f"Plate number detected: `{predictions[0]}`")
+                    st.write(f"Plate Region detected: `{predictions[1]}`")
+                else:
+                    st.write(f"Undetected text Found: This might be because of the image is too small and blur.")
+            except Exception as e:
+                st.error(f"Error processing {path}: {e}")
